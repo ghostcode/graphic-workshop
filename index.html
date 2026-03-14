@@ -211,6 +211,39 @@
       font-family: 'Long Cang', cursive;
     }
 
+    /* Toast 样式 */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #232f3e;
+      border: 1px solid #2d3a4d;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    #toast.success {
+      border-color: #22c55e;
+    }
+
+    #toast.error {
+      border-color: #ef4444;
+    }
+
     /* Reduced motion */
     @media (prefers-reduced-motion: reduce) {
 
@@ -231,6 +264,12 @@
     <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl"></div>
   </div>
 
+  <!-- Toast 提示容器 -->
+  <div id="toast">
+    <span id="toastIcon"></span>
+    <span id="toastMsg" class="text-sm font-medium"></span>
+  </div>
+
   <div class="relative z-10 max-w-7xl mx-auto px-4 py-6 md:py-10">
     <!-- Header -->
     <header class="text-center mb-8 md:mb-12 animate-enter">
@@ -241,7 +280,7 @@
     </header>
 
     <!-- 主内容区 -->
-    <div class="grid lg:grid-cols-[380px_1fr] gap-6">
+    <div class="grid lg:grid-cols-[380px_1fr] gap-6 items-start">
       <!-- 左侧控制面板 -->
       <aside class="space-y-4 animate-enter delay-1">
         <!-- 图片来源 -->
@@ -463,20 +502,30 @@
           </div>
         </section>
 
-        <!-- 导出按钮 -->
-        <button id="downloadBtn"
-          class="w-full py-3 bg-accent hover:bg-accent-dim text-bg font-medium rounded-xl btn-press transition-colors flex items-center justify-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          下载图片
-        </button>
+        <!-- 导出按钮组 -->
+        <div class="grid grid-cols-2 gap-3">
+          <button id="downloadBtn"
+            class="py-3 bg-accent hover:bg-accent-dim text-bg font-medium rounded-xl btn-press transition-colors flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            下载图片
+          </button>
+          <button id="copyBtn"
+            class="py-3 bg-card hover:bg-border text-fg font-medium rounded-xl btn-press transition-colors flex items-center justify-center gap-2 border border-border">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span id="copyBtnText">复制图片</span>
+          </button>
+        </div>
       </aside>
 
-      <!-- 右侧画布区 -->
-      <main class="animate-enter delay-2">
-        <div class="bg-surface rounded-xl border border-border p-4 md:p-6">
+      <!-- 右侧画布区 - 添加吸顶效果 -->
+      <main class="animate-enter delay-2 lg:sticky lg:top-6 lg:self-start">
+        <div class="bg-surface rounded-xl border border-border p-4 md:p-6 shadow-2xl shadow-black/20">
           <div class="flex items-center justify-between mb-4">
             <span class="text-sm text-muted">预览</span>
             <span id="canvasSize" class="text-xs text-muted/60">800 x 800</span>
@@ -543,8 +592,39 @@
     const ctx = canvas.getContext('2d');
     const canvasContainer = document.getElementById('canvasContainer');
 
+    // ===== Toast 功能 =====
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      // 设置消息
+      toastMsg.textContent = message;
+
+      // 设置图标和样式
+      toast.classList.remove('success', 'error');
+      toast.classList.add(type);
+
+      if (type === 'success') {
+        toastIcon.innerHTML = `<svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+      } else {
+        toastIcon.innerHTML = `<svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
+      }
+
+      // 显示
+      toast.classList.add('show');
+
+      // 3秒后隐藏
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
     // ===== 初始化 =====
-    function init() {
+    async function init() {
+      // 等待字体加载完成
+      await document.fonts.ready;
+
       setupCanvas();
       bindEvents();
       render();
@@ -782,8 +862,17 @@
         render();
       });
 
-      document.getElementById('fontFamily').addEventListener('change', e => {
+      // 字体选择 - 增加字体加载等待
+      document.getElementById('fontFamily').addEventListener('change', async (e) => {
         state.fontFamily = e.target.value;
+
+        // 等待字体加载完成
+        try {
+          await document.fonts.load(`${state.fontWeight} ${state.fontSize}px "${state.fontFamily}"`);
+        } catch (err) {
+          console.warn('字体加载等待超时，已使用后备字体');
+        }
+
         render();
       });
 
@@ -846,6 +935,9 @@
 
       // 下载
       document.getElementById('downloadBtn').addEventListener('click', downloadImage);
+
+      // 复制图片
+      document.getElementById('copyBtn').addEventListener('click', copyImage);
 
       // 窗口resize
       window.addEventListener('resize', updateCanvasDisplay);
@@ -964,6 +1056,37 @@
       link.download = `图文工坊_${Date.now()}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
+      showToast('图片下载成功', 'success');
+    }
+
+    // ===== 复制功能 =====
+    async function copyImage() {
+      const btn = document.getElementById('copyBtn');
+
+      // 尝试使用现代 Clipboard API
+      if (navigator.clipboard && navigator.clipboard.write) {
+        try {
+          // 确保字体已加载再导出
+          await document.fonts.load(`${state.fontWeight} ${state.fontSize}px "${state.fontFamily}"`);
+
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(b => {
+              if (b) resolve(b);
+              else reject(new Error('Blob generation failed'));
+            }, 'image/png');
+          });
+
+          const item = new ClipboardItem({ 'image/png': blob });
+          await navigator.clipboard.write([item]);
+
+          showToast('图片已复制到剪贴板', 'success');
+        } catch (err) {
+          console.error('复制失败:', err);
+          showToast('复制失败，请重试', 'error');
+        }
+      } else {
+        showToast('浏览器不支持复制图片', 'error');
+      }
     }
 
     // 启动
